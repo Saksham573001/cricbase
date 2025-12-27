@@ -19,10 +19,13 @@ Railway will automatically detect the project and create a service.
 
 ## Step 2: Configure Backend Service
 
+**IMPORTANT**: You MUST set the Root Directory in Railway settings, otherwise Nixpacks will fail!
+
 1. Railway creates a service - click on it
 2. Click **"Settings"** tab
-3. Set **Root Directory** to: `backend`
-4. Verify **Start Command** is: `uvicorn main:app --host 0.0.0.0 --port $PORT`
+3. **CRITICAL**: Under "Root Directory", set it to: `backend` (this is required!)
+4. Verify **Start Command** is automatically set to: `uvicorn main:app --host 0.0.0.0 --port $PORT`
+   - If not, set it manually in the Deploy section
 5. Go to **Variables** tab and add:
 
 ```

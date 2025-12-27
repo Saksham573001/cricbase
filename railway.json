@@ -1,5 +1,6 @@
 {
   "$schema": "https://railway.app/railway.schema.json",
+  "$comment": "This file is for root-level reference. Configure root directory in Railway dashboard settings to 'backend' or 'frontend' for each service.",
   "build": {
     "builder": "NIXPACKS"
   },
