@@ -177,6 +177,22 @@ export const MatchDetailScreen: React.FC = () => {
   const filteredDeliveries = getFilteredDeliveries();
   const currentBatting = getCurrentBattingTeam();
 
+  const getMatchResult = () => {
+    if (match.status === 'completed' && match.score) {
+      const team1Score = match.score.team1?.runs || 0;
+      const team2Score = match.score.team2?.runs || 0;
+      const team1Wickets = match.score.team1?.wickets || 0;
+      const team2Wickets = match.score.team2?.wickets || 0;
+      
+      if (team1Score > team2Score) {
+        return `${match.team1} won by ${10 - team2Wickets} wickets`;
+      } else if (team2Score > team1Score) {
+        return `${match.team2} won by ${10 - team1Wickets} wickets`;
+      }
+    }
+    return null;
+  };
+
   return (
     <div className="match-detail-screen" style={{ backgroundColor: theme.colors.background }}>
       <div className="match-detail-container">
@@ -197,18 +213,65 @@ export const MatchDetailScreen: React.FC = () => {
         </div>
 
         {/* Match Summary Header */}
-        {currentBatting && (
-          <div className="match-summary-header" style={{ backgroundColor: theme.colors.surface }}>
-            <div className="summary-top">
-              <div className="current-over">
-                OVER {getCurrentOver().split('.')[0]}
+        <div className="match-summary-header" style={{ backgroundColor: theme.colors.surface }}>
+          {getMatchResult() ? (
+            <div className="match-result">
+              <span className="trophy">🏆</span>
+              <span>{getMatchResult()}</span>
+            </div>
+          ) : null}
+          <div className="team-scores">
+            <div className="team-score-item">
+              <img 
+                src={match.team1Logo || `https://flagcdn.com/w40/${match.team1.toLowerCase().replace(/\s+/g, '-')}.png`}
+                alt={match.team1}
+                className="team-flag"
+                onError={(e) => {
+                  const target = e.target as HTMLImageElement;
+                  target.src = `https://flagcdn.com/w40/in.png`;
+                }}
+              />
+              <div className="team-score-details">
+                <div className="team-name">{match.team1.substring(0, 3).toUpperCase()}</div>
+                {match.score?.team1 ? (
+                  <div className="team-score-text">
+                    {match.score.team1.runs}-{match.score.team1.wickets}
+                    {match.score.team1.overs && ` (${match.score.team1.overs.toFixed(1)})`}
+                  </div>
+                ) : (
+                  <div className="team-score-text">-</div>
+                )}
               </div>
-              <div className="current-score">
-                {currentBatting.team} {currentBatting.score.runs}/{currentBatting.score.wickets}
+            </div>
+            <div className="team-score-item">
+              <img 
+                src={match.team2Logo || `https://flagcdn.com/w40/${match.team2.toLowerCase().replace(/\s+/g, '-')}.png`}
+                alt={match.team2}
+                className="team-flag"
+                onError={(e) => {
+                  const target = e.target as HTMLImageElement;
+                  target.src = `https://flagcdn.com/w40/nz.png`;
+                }}
+              />
+              <div className="team-score-details">
+                <div className="team-name">{match.team2.substring(0, 3).toUpperCase()}</div>
+                {match.score?.team2 ? (
+                  <div className="team-score-text">
+                    {match.score.team2.overs && `(${match.score.team2.overs.toFixed(1)}) `}
+                    {match.score.team2.runs}-{match.score.team2.wickets}
+                  </div>
+                ) : (
+                  <div className="team-score-text">-</div>
+                )}
               </div>
             </div>
           </div>
-        )}
+          <div className="match-tabs">
+            <button className="match-tab">Match info</button>
+            <button className="match-tab active">Live</button>
+            <button className="match-tab">Scorecard</button>
+          </div>
+        </div>
 
         {/* Commentary Filters */}
         <div className="commentary-filters">
