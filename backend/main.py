@@ -354,12 +354,53 @@ async def get_match_deliveries(match_id: str, last_doc_id: Optional[int] = None)
             response.raise_for_status()
             data = response.json()
             
-            # Filter for ball deliveries (type: "b")
-            ball_feeds = [item for item in data if item.get("type") == "b"]
+            # Filter for ball deliveries (type: "b") and text commentary (type: "t")
+            ball_feeds = [item for item in data if item.get("type") in ["b", "t"]]
             
             # Transform ball feeds to Delivery schema
             deliveries = []
             for ball_feed in ball_feeds:
+                feed_type = ball_feed.get("type", "")
+                
+                # Handle text commentary (type: "t")
+                if feed_type == "t":
+                    # Get description from "c" field (HTML content)
+                    description = ball_feed.get("c", "")
+                    description = re.sub(r'<[^>]+>', '', description)
+                    description = description.replace('&nbsp;', ' ')
+                    description = description.replace('&lt;', '<').replace('&gt;', '>')
+                    
+                    # Get timestamp from id (it's a timestamp in milliseconds)
+                    feed_id = ball_feed.get("id", 0)
+                    timestamp = datetime.fromtimestamp(feed_id / 1000).isoformat() if feed_id else datetime.now().isoformat()
+                    
+                    # Generate delivery ID from match_id and feed_id
+                    delivery_id = f"{match_id}_{feed_id}"
+                    
+                    # Use over from "on" field if available, otherwise use -1 for text items
+                    over = ball_feed.get("on", -1) if ball_feed.get("on", -1) >= 0 else 0
+                    ball = 0
+                    
+                    deliveries.append({
+                        "id": delivery_id,
+                        "matchId": match_id,
+                        "over": over,
+                        "ball": ball,
+                        "bowler": "",
+                        "batsman": "",
+                        "runs": 0,
+                        "isWicket": False,
+                        "wicketType": None,
+                        "isFour": False,
+                        "isSix": False,
+                        "description": description,
+                        "timestamp": timestamp,
+                        "commentCount": 0,
+                        "_type": "commentary"  # Mark as commentary type
+                    })
+                    continue
+                
+                # Handle ball deliveries (type: "b")
                 # Parse over and ball from "o" field (e.g., "48.4" -> over: 48, ball: 4)
                 over_ball = ball_feed.get("o", "")
                 over = 0

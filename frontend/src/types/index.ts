@@ -39,6 +39,7 @@ export interface Delivery {
   description: string;
   timestamp: string;
   commentCount: number;
+  _type?: string; // Optional field to distinguish commentary vs ball delivery
 }
 
 export interface Comment {

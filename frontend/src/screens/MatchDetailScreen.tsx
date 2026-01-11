@@ -239,35 +239,45 @@ export const MatchDetailScreen: React.FC = () => {
             <div className="empty-state">No commentary available</div>
           ) : (
             <>
-              {filteredDeliveries.map((delivery) => (
-                <div
-                  key={delivery.id}
-                  className={`commentary-item ${delivery.isWicket ? 'wicket-item' : ''}`}
-                  style={{
-                    backgroundColor: delivery.isWicket ? 'rgba(220, 38, 38, 0.1)' : 'transparent',
-                    borderLeft: delivery.isWicket ? `3px solid ${theme.colors.cricketRed}` : 'none',
-                  }}
-                >
-                  <div className="commentary-header">
-                    <div className="over-ball">{delivery.over}.{delivery.ball}</div>
-                    <div 
-                      className="run-badge"
-                      style={{
-                        backgroundColor: getRunBadgeColor(delivery),
-                        color: '#ffffff',
-                      }}
-                    >
-                      {delivery.isWicket ? 'W' : delivery.runs}
+              {filteredDeliveries.map((delivery) => {
+                const isCommentary = delivery._type === 'commentary';
+                return (
+                  <div
+                    key={delivery.id}
+                    className={`commentary-item ${delivery.isWicket ? 'wicket-item' : ''} ${isCommentary ? 'commentary-text-item' : ''}`}
+                    style={{
+                      backgroundColor: delivery.isWicket ? 'rgba(220, 38, 38, 0.1)' : isCommentary ? 'rgba(147, 51, 234, 0.05)' : 'transparent',
+                      borderLeft: delivery.isWicket ? `3px solid ${theme.colors.cricketRed}` : isCommentary ? `3px solid ${theme.colors.primary}` : 'none',
+                      paddingLeft: isCommentary ? '20px' : undefined,
+                    }}
+                  >
+                    {!isCommentary && (
+                      <>
+                        <div className="commentary-header">
+                          <div className="over-ball">{delivery.over}.{delivery.ball}</div>
+                          <div 
+                            className="run-badge"
+                            style={{
+                              backgroundColor: getRunBadgeColor(delivery),
+                              color: '#ffffff',
+                            }}
+                          >
+                            {delivery.isWicket ? 'W' : delivery.runs}
+                          </div>
+                        </div>
+                        {delivery.bowler && delivery.batsman && (
+                          <div className="bowler-batsman" style={{ color: theme.colors.textSecondary }}>
+                            {delivery.bowler} to {delivery.batsman}
+                          </div>
+                        )}
+                      </>
+                    )}
+                    <div className="commentary-text" style={{ color: theme.colors.text }}>
+                      {delivery.description}
                     </div>
                   </div>
-                  <div className="bowler-batsman" style={{ color: theme.colors.textSecondary }}>
-                    {delivery.bowler} to {delivery.batsman}
-                  </div>
-                  <div className="commentary-text" style={{ color: theme.colors.text }}>
-                    {delivery.description}
-                  </div>
-                </div>
-              ))}
+                );
+              })}
               
               {/* Infinite scroll trigger */}
               {hasMore && (
