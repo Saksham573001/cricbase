@@ -330,7 +330,7 @@ export const MatchDetailScreen: React.FC = () => {
                               color: '#ffffff',
                             }}
                           >
-                            {delivery.isWicket ? 'W' : delivery.runs}
+                            {getRunBadgeContent(delivery)}
                           </div>
                         </div>
                         {delivery.bowler && delivery.batsman && (
