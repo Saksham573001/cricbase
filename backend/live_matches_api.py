@@ -176,6 +176,34 @@ class LiveMatchesAPI:
             print(f"Error fetching match statistics for {match_id}: {e}")
             return None
 
+    def parse_current_over_ball(self, value) -> Optional[int]:
+        """Parse current over/ball value, handling encoded strings like 'O5.4W5'"""
+        if value is None:
+            return None
+        
+        # If it's already an integer, return it
+        if isinstance(value, int):
+            return value
+        
+        # If it's a string, try to parse it
+        if isinstance(value, str):
+            # Try to extract numeric value from strings like 'O5.4W5' or '5.4'
+            # First, try direct integer conversion
+            try:
+                return int(value)
+            except ValueError:
+                # Try to extract numbers from encoded strings
+                # Look for patterns like '5.4' or '5'
+                import re
+                match = re.search(r'(\d+)\.?(\d+)?', value)
+                if match:
+                    # Extract the integer part before the decimal
+                    return int(match.group(1))
+                # If no pattern matches, return None
+                return None
+        
+        return None
+
     def transform_match_statistics_to_schema(self, stats_data: Dict, match_id: str) -> Dict:
         """Transform match statistics API format to our schema"""
         # Get team codes from stats (if available in 'a' field like "O.R")
@@ -240,9 +268,9 @@ class LiveMatchesAPI:
         # Get result
         result = stats_data.get("res", "")
         
-        # Current over/ball
-        current_over = stats_data.get("g")
-        current_ball = stats_data.get("h")
+        # Current over/ball - parse encoded strings
+        current_over = self.parse_current_over_ball(stats_data.get("g"))
+        current_ball = self.parse_current_over_ball(stats_data.get("h"))
         
         return {
             "id": match_id,
@@ -255,8 +283,8 @@ class LiveMatchesAPI:
             "date": date_str,
             "format": format_type,
             "score": score,
-            "currentOver": current_over if current_over else None,
-            "currentBall": current_ball if current_ball else None,
+            "currentOver": current_over,
+            "currentBall": current_ball,
             "_raw": {
                 "result": result,
                 "format_code": format_code,
