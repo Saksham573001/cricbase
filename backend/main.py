@@ -223,10 +223,20 @@ async def get_matches(status: Optional[str] = None, offset: int = 0):
 
 @app.get("/matches/{match_id}", response_model=Match)
 async def get_match(match_id: str):
-    """Get a specific match by ID. Calls Cricket Data API internally."""
+    """Get a specific match by ID. Calls Live Matches API statistics endpoint."""
     try:
-        # Try Cricket Data API first (only if match_id looks like a UUID)
-        # Cricket Data API uses UUIDs, Supabase might use different IDs
+        # Try Live Matches API statistics endpoint first
+        if live_matches_api:
+            try:
+                stats_data = await live_matches_api.get_match_statistics(match_id)
+                if stats_data:
+                    transformed = live_matches_api.transform_match_statistics_to_schema(stats_data, match_id)
+                    print(f"Fetched match {match_id} statistics from Live Matches API")
+                    return transformed
+            except Exception as api_error:
+                print(f"Error calling Live Matches API for match {match_id}: {api_error}. Trying other sources.")
+        
+        # Try Cricket Data API (only if match_id looks like a UUID)
         import re
         uuid_pattern = re.compile(r'^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$', re.IGNORECASE)
         
@@ -239,8 +249,6 @@ async def get_match(match_id: str):
                     return transformed
             except Exception as api_error:
                 print(f"Error calling Cricket Data API for match {match_id}: {api_error}. Falling back to Supabase.")
-        elif cricket_api:
-            print(f"Match ID {match_id} is not a UUID, skipping Cricket Data API and checking Supabase.")
         
         # Fallback to Supabase
         result = supabase.table("matches").select("*").eq("id", match_id).execute()

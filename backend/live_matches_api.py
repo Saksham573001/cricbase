@@ -159,4 +159,109 @@ class LiveMatchesAPI:
         """Get all matches (same as live for this API)"""
         return await self.get_live_matches()
 
+    async def get_match_statistics(self, match_id: str) -> Optional[Dict]:
+        """Get detailed match statistics for a specific match"""
+        try:
+            async with httpx.AsyncClient() as client:
+                response = await client.get(
+                    "https://api-v1.com/w/sV3.php",
+                    params={"key": match_id},
+                    timeout=30.0
+                )
+                response.raise_for_status()
+                data = response.json()
+                # The API returns a dict with match statistics
+                return data
+        except Exception as e:
+            print(f"Error fetching match statistics for {match_id}: {e}")
+            return None
+
+    def transform_match_statistics_to_schema(self, stats_data: Dict, match_id: str) -> Dict:
+        """Transform match statistics API format to our schema"""
+        # Get team codes from stats (if available in 'a' field like "O.R")
+        team_codes = stats_data.get("a", "").split(".") if stats_data.get("a") else []
+        team1_code = team_codes[0] if len(team_codes) > 0 else stats_data.get("b", "Team 1")
+        team2_code = team_codes[1] if len(team_codes) > 1 else stats_data.get("c", "Team 2")
+        
+        # Map team codes to full team names
+        team1_info = get_team_info(team1_code)
+        team2_info = get_team_info(team2_code)
+        
+        team1 = team1_info["name"]
+        team2 = team2_info["name"]
+        
+        # Get team logos
+        team1_logo = team1_info["flag"]
+        team2_logo = team2_info["flag"]
+        
+        # Parse scores
+        score_j = stats_data.get("j", "")
+        score_k = stats_data.get("k", "")
+        
+        team1_score = self.parse_score(score_j) if score_j else None
+        team2_score = self.parse_score(score_k) if score_k else None
+        
+        score = None
+        if team1_score or team2_score:
+            score = {}
+            if team1_score:
+                score["team1"] = team1_score
+            if team2_score:
+                score["team2"] = team2_score
+        
+        # Determine match status
+        # ms: 1 = upcoming, 2 = live/completed
+        ms = stats_data.get("ms", 1)
+        res = stats_data.get("res", "").lower() if stats_data.get("res") else ""
+        
+        if ms == 2:
+            if res and ("won" in res or "abandoned" in res or "delayed" in res):
+                status = "completed"
+            else:
+                status = "live"
+        else:
+            status = "upcoming"
+        
+        # Get format
+        format_code = stats_data.get("fo", "T20")
+        format_type = self.get_format_from_code(format_code)
+        
+        # Parse timestamp
+        timestamp_ms = stats_data.get("mt") or stats_data.get("ti", 0)
+        if timestamp_ms:
+            date_str = datetime.fromtimestamp(timestamp_ms / 1000).isoformat()
+        else:
+            date_str = datetime.now().isoformat()
+        
+        # Get venue code
+        venue_code = stats_data.get("v", "")
+        venue = venue_code
+        
+        # Get result
+        result = stats_data.get("res", "")
+        
+        # Current over/ball
+        current_over = stats_data.get("g")
+        current_ball = stats_data.get("h")
+        
+        return {
+            "id": match_id,
+            "team1": team1,
+            "team2": team2,
+            "team1Logo": team1_logo,
+            "team2Logo": team2_logo,
+            "venue": venue,
+            "status": status,
+            "date": date_str,
+            "format": format_type,
+            "score": score,
+            "currentOver": current_over if current_over else None,
+            "currentBall": current_ball if current_ball else None,
+            "_raw": {
+                "result": result,
+                "format_code": format_code,
+                "stats": stats_data,  # Include full stats for detailed view
+            }
+        }
+
 
