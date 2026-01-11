@@ -1,12 +1,11 @@
 {
   "$schema": "https://railway.app/railway.schema.json",
-  "$comment": "This file is for root-level reference. Configure root directory in Railway dashboard settings to 'backend' or 'frontend' for each service.",
   "build": {
     "builder": "NIXPACKS"
   },
   "deploy": {
+    "startCommand": "uvicorn main:app --host 0.0.0.0 --port $PORT",
     "restartPolicyType": "ON_FAILURE",
     "restartPolicyMaxRetries": 10
   }
 }
-
