@@ -5,7 +5,7 @@
 }
 
 .match-detail-container {
-  max-width: 1200px;
+  max-width: 800px;
   margin: 0 auto;
 }
 
@@ -24,91 +24,147 @@
   padding: 8px 16px;
   border-radius: 8px;
   transition: background-color 0.2s;
+  color: #ffffff;
 }
 
 .back-button:hover {
   background-color: rgba(255, 255, 255, 0.05);
 }
 
-.match-status {
+.live-badge {
   font-weight: 600;
   font-size: 14px;
   text-transform: uppercase;
   letter-spacing: 0.5px;
 }
 
-.match-info-card {
-  padding: 32px;
-  margin-bottom: 32px;
-  border-radius: 16px;
-  border: 1px solid;
-  background: #1a1a1a;
-}
-
-.match-teams {
-  display: flex;
-  align-items: center;
-  gap: 32px;
+.match-summary-header {
+  padding: 16px 20px;
+  border-radius: 12px;
   margin-bottom: 24px;
+  border: 1px solid #2a2a2a;
 }
 
-.match-info-card .team {
-  flex: 1;
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  gap: 12px;
-}
-
-.team-logo {
-  width: 64px;
-  height: 64px;
-  object-fit: contain;
-}
-
-.match-info-card .team-name {
-  font-weight: 600;
-  font-size: 24px;
-  color: #ffffff;
-  text-align: center;
-}
-
-.match-info-card .team-score {
-  font-size: 18px;
-  color: #a3a3a3;
-  font-weight: 500;
-  text-align: center;
-}
-
-.match-info-card .vs {
-  font-size: 18px;
-  color: #737373;
-  font-weight: 600;
-}
-
-.match-meta {
+.summary-top {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  padding-top: 24px;
-  border-top: 1px solid #2a2a2a;
+}
+
+.current-over {
   font-size: 14px;
-}
-
-.match-deliveries {
-  margin-top: 32px;
-}
-
-.section-title {
-  font-size: 24px;
   font-weight: 600;
-  margin-bottom: 24px;
+  color: #a3a3a3;
+  letter-spacing: 0.5px;
 }
 
-.deliveries-grid {
-  display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+.current-score {
+  font-size: 18px;
+  font-weight: 600;
+  color: #ffffff;
+}
+
+.commentary-filters {
+  display: flex;
+  gap: 8px;
+  margin-bottom: 24px;
+  overflow-x: auto;
+  padding-bottom: 8px;
+  scrollbar-width: thin;
+  scrollbar-color: #2a2a2a transparent;
+}
+
+.commentary-filters::-webkit-scrollbar {
+  height: 4px;
+}
+
+.commentary-filters::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+.commentary-filters::-webkit-scrollbar-thumb {
+  background-color: #2a2a2a;
+  border-radius: 2px;
+}
+
+.filter-tab {
+  padding: 8px 16px;
+  border: none;
+  border-radius: 20px;
+  font-size: 14px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.2s;
+  white-space: nowrap;
+  background: transparent;
+  color: #a3a3a3;
+}
+
+.filter-tab:hover {
+  background-color: rgba(255, 255, 255, 0.05);
+}
+
+.filter-tab.active {
+  background-color: #1a1a1a;
+  color: #ffffff;
+}
+
+.commentary-feed {
+  display: flex;
+  flex-direction: column;
   gap: 20px;
+}
+
+.commentary-item {
+  padding: 16px;
+  border-radius: 12px;
+  transition: background-color 0.2s;
+}
+
+.commentary-item:hover {
+  background-color: rgba(255, 255, 255, 0.02);
+}
+
+.wicket-item {
+  padding-left: 20px;
+}
+
+.commentary-header {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin-bottom: 8px;
+}
+
+.over-ball {
+  font-size: 16px;
+  font-weight: 600;
+  color: #ffffff;
+  min-width: 50px;
+}
+
+.run-badge {
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-weight: 600;
+  font-size: 14px;
+  flex-shrink: 0;
+}
+
+.bowler-batsman {
+  font-size: 14px;
+  margin-bottom: 8px;
+  font-weight: 500;
+}
+
+.commentary-text {
+  font-size: 15px;
+  line-height: 1.6;
+  margin-top: 4px;
 }
 
 .loading, .empty-state {
@@ -119,23 +175,36 @@
 }
 
 @media (max-width: 768px) {
-  .match-teams {
-    flex-direction: column;
-    gap: 24px;
+  .match-detail-screen {
+    padding: 16px;
+    padding-top: 70px;
   }
 
-  .match-info-card .vs {
-    transform: rotate(90deg);
+  .commentary-filters {
+    gap: 6px;
   }
 
-  .match-meta {
-    flex-direction: column;
-    gap: 8px;
-    align-items: flex-start;
+  .filter-tab {
+    padding: 6px 12px;
+    font-size: 13px;
   }
 
-  .deliveries-grid {
-    grid-template-columns: 1fr;
+  .commentary-item {
+    padding: 12px;
+  }
+
+  .over-ball {
+    font-size: 14px;
+    min-width: 45px;
+  }
+
+  .run-badge {
+    width: 28px;
+    height: 28px;
+    font-size: 12px;
+  }
+
+  .commentary-text {
+    font-size: 14px;
   }
 }
-

@@ -1,10 +1,11 @@
 import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { Match, Delivery } from '../types';
-import { DeliveryCard } from '../components/DeliveryCard';
 import { api } from '../config/api';
 import { theme } from '../theme';
 import './MatchDetailScreen.css';
+
+type CommentaryFilter = 'all' | 'highlights' | 'overs' | 'wickets' | 'sixes' | 'fours' | 'firstInning' | 'secondInning';
 
 export const MatchDetailScreen: React.FC = () => {
   const { id } = useParams<{ id: string }>();
@@ -12,6 +13,7 @@ export const MatchDetailScreen: React.FC = () => {
   const [match, setMatch] = useState<Match | null>(null);
   const [deliveries, setDeliveries] = useState<Delivery[]>([]);
   const [loading, setLoading] = useState(true);
+  const [filter, setFilter] = useState<CommentaryFilter>('all');
 
   useEffect(() => {
     if (id) {
@@ -40,6 +42,51 @@ export const MatchDetailScreen: React.FC = () => {
     }
   };
 
+  const getFilteredDeliveries = () => {
+    switch (filter) {
+      case 'sixes':
+        return deliveries.filter(d => d.isSix);
+      case 'fours':
+        return deliveries.filter(d => d.isFour);
+      case 'wickets':
+        return deliveries.filter(d => d.isWicket);
+      default:
+        return deliveries;
+    }
+  };
+
+  const getRunBadgeColor = (delivery: Delivery) => {
+    if (delivery.isSix) return '#22c55e'; // Green for six
+    if (delivery.isFour) return '#3b82f6'; // Blue for four
+    if (delivery.isWicket) return '#dc2626'; // Red for wicket
+    return '#404040'; // Dark grey for regular runs
+  };
+
+  const getCurrentBattingTeam = () => {
+    if (!match?.score) return null;
+    // Determine which team is currently batting (usually the one with incomplete innings)
+    const team1Score = match.score.team1;
+    const team2Score = match.score.team2;
+    
+    if (!team2Score) return { team: match.team1, score: team1Score };
+    if (!team1Score) return { team: match.team2, score: team2Score };
+    
+    // If both exist, assume team2 is batting (chasing)
+    return { team: match.team2, score: team2Score };
+  };
+
+  const getCurrentOver = () => {
+    if (match?.currentOver !== undefined && match?.currentBall !== undefined) {
+      return `${match.currentOver}.${match.currentBall}`;
+    }
+    // Fallback to last delivery's over
+    if (deliveries.length > 0) {
+      const last = deliveries[deliveries.length - 1];
+      return `${last.over}.${last.ball}`;
+    }
+    return '0.0';
+  };
+
   if (loading) {
     return (
       <div className="match-detail-screen" style={{ backgroundColor: theme.colors.background }}>
@@ -56,36 +103,13 @@ export const MatchDetailScreen: React.FC = () => {
     );
   }
 
-  const getStatusColor = (status: Match['status']) => {
-    switch (status) {
-      case 'live':
-        return theme.colors.error;
-      case 'upcoming':
-        return theme.colors.warning;
-      case 'completed':
-        return theme.colors.textSecondary;
-      default:
-        return theme.colors.textSecondary;
-    }
-  };
-
-  const getStatusBadge = (status: Match['status']) => {
-    switch (status) {
-      case 'live':
-        return '🔴 LIVE';
-      case 'upcoming':
-        return '⏰ Upcoming';
-      case 'completed':
-        return '✅ Completed';
-      default:
-        return '';
-    }
-  };
+  const filteredDeliveries = getFilteredDeliveries();
+  const currentBatting = getCurrentBattingTeam();
 
   return (
     <div className="match-detail-screen" style={{ backgroundColor: theme.colors.background }}>
       <div className="match-detail-container">
-        {/* Match Header */}
+        {/* Header with back button */}
         <div className="match-header">
           <button 
             className="back-button"
@@ -94,76 +118,87 @@ export const MatchDetailScreen: React.FC = () => {
           >
             ← Back
           </button>
-          <div className="match-status" style={{ color: getStatusColor(match.status) }}>
-            {getStatusBadge(match.status)}
-          </div>
+          {match.status === 'live' && (
+            <div className="live-badge" style={{ color: theme.colors.error }}>
+              🔴 LIVE
+            </div>
+          )}
         </div>
 
-        {/* Match Info Card */}
-        <div 
-          className="match-info-card"
-          style={{
-            backgroundColor: theme.colors.surface,
-            borderColor: theme.colors.border,
-          }}
-        >
-          <div className="match-teams">
-            <div className="team">
-              {match.team1Logo && (
-                <img src={match.team1Logo} alt={match.team1} className="team-logo" />
-              )}
-              <span className="team-name">{match.team1}</span>
-              {match.score && match.score.team1 && (
-                <span className="team-score">
-                  {match.score.team1.runs}/{match.score.team1.wickets} ({match.score.team1.overs} ov)
-                </span>
-              )}
-            </div>
-            <div className="vs">vs</div>
-            <div className="team">
-              {match.team2Logo && (
-                <img src={match.team2Logo} alt={match.team2} className="team-logo" />
-              )}
-              <span className="team-name">{match.team2}</span>
-              {match.score && match.score.team2 && (
-                <span className="team-score">
-                  {match.score.team2.runs}/{match.score.team2.wickets} ({match.score.team2.overs} ov)
-                </span>
-              )}
+        {/* Match Summary Header */}
+        {currentBatting && (
+          <div className="match-summary-header" style={{ backgroundColor: theme.colors.surface }}>
+            <div className="summary-top">
+              <div className="current-over">
+                OVER {getCurrentOver().split('.')[0]}
+              </div>
+              <div className="current-score">
+                {currentBatting.team} {currentBatting.score.runs}/{currentBatting.score.wickets}
+              </div>
             </div>
           </div>
+        )}
 
-          <div className="match-meta">
-            <span style={{ color: theme.colors.textSecondary }}>
-              {match.format} • {match.venue}
-            </span>
-            <span style={{ color: theme.colors.textSecondary }}>
-              {new Date(match.date).toLocaleDateString()}
-            </span>
-          </div>
+        {/* Commentary Filters */}
+        <div className="commentary-filters">
+          {(['all', 'highlights', 'overs', 'wickets', 'sixes', 'fours', 'firstInning', 'secondInning'] as CommentaryFilter[]).map((filterType) => (
+            <button
+              key={filterType}
+              className={`filter-tab ${filter === filterType ? 'active' : ''}`}
+              onClick={() => setFilter(filterType)}
+              style={{
+                backgroundColor: filter === filterType ? theme.colors.surface : 'transparent',
+                color: filter === filterType ? theme.colors.text : theme.colors.textSecondary,
+              }}
+            >
+              {filterType === 'all' ? 'All' : 
+               filterType === 'sixes' ? '6s' :
+               filterType === 'fours' ? '4s' :
+               filterType === 'wickets' ? 'W' :
+               filterType === 'firstInning' ? 'Inn 1' :
+               filterType === 'secondInning' ? 'Inn 2' :
+               filterType.charAt(0).toUpperCase() + filterType.slice(1)}
+            </button>
+          ))}
         </div>
 
-        {/* Deliveries Section */}
-        <div className="match-deliveries">
-          <h2 className="section-title" style={{ color: theme.colors.text }}>
-            Deliveries ({deliveries.length})
-          </h2>
-          {deliveries.length === 0 ? (
-            <div className="empty-state">No deliveries found for this match</div>
+        {/* Commentary Feed */}
+        <div className="commentary-feed">
+          {filteredDeliveries.length === 0 ? (
+            <div className="empty-state">No commentary available</div>
           ) : (
-            <div className="deliveries-grid">
-              {deliveries.map((delivery) => (
-                <DeliveryCard
-                  key={delivery.id}
-                  delivery={delivery}
-                  matchInfo={{ team1: match.team1, team2: match.team2 }}
-                />
-              ))}
-            </div>
+            filteredDeliveries.map((delivery) => (
+              <div
+                key={delivery.id}
+                className={`commentary-item ${delivery.isWicket ? 'wicket-item' : ''}`}
+                style={{
+                  backgroundColor: delivery.isWicket ? 'rgba(220, 38, 38, 0.1)' : 'transparent',
+                  borderLeft: delivery.isWicket ? `3px solid ${theme.colors.cricketRed}` : 'none',
+                }}
+              >
+                <div className="commentary-header">
+                  <div className="over-ball">{delivery.over}.{delivery.ball}</div>
+                  <div 
+                    className="run-badge"
+                    style={{
+                      backgroundColor: getRunBadgeColor(delivery),
+                      color: '#ffffff',
+                    }}
+                  >
+                    {delivery.isWicket ? 'W' : delivery.runs}
+                  </div>
+                </div>
+                <div className="bowler-batsman" style={{ color: theme.colors.textSecondary }}>
+                  {delivery.bowler} to {delivery.batsman}
+                </div>
+                <div className="commentary-text" style={{ color: theme.colors.text }}>
+                  {delivery.description}
+                </div>
+              </div>
+            ))
           )}
         </div>
       </div>
     </div>
   );
 };
-
