@@ -39,29 +39,93 @@
 }
 
 .match-summary-header {
-  padding: 16px 20px;
+  padding: 20px;
   border-radius: 12px;
   margin-bottom: 24px;
   border: 1px solid #2a2a2a;
 }
 
-.summary-top {
+.match-result {
   display: flex;
-  justify-content: space-between;
   align-items: center;
-}
-
-.current-over {
-  font-size: 14px;
-  font-weight: 600;
-  color: #a3a3a3;
-  letter-spacing: 0.5px;
-}
-
-.current-score {
+  justify-content: center;
+  gap: 8px;
   font-size: 18px;
   font-weight: 600;
   color: #ffffff;
+  margin-bottom: 16px;
+}
+
+.match-result .trophy {
+  font-size: 20px;
+}
+
+.team-scores {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 16px;
+  gap: 16px;
+}
+
+.team-score-item {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  flex: 1;
+}
+
+.team-flag {
+  width: 32px;
+  height: 24px;
+  object-fit: cover;
+  border-radius: 4px;
+}
+
+.team-score-details {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.team-name {
+  font-size: 14px;
+  font-weight: 600;
+  color: #ffffff;
+}
+
+.team-score-text {
+  font-size: 16px;
+  font-weight: 500;
+  color: #a3a3a3;
+}
+
+.match-tabs {
+  display: flex;
+  gap: 8px;
+  border-bottom: 1px solid #2a2a2a;
+  padding-bottom: 0;
+}
+
+.match-tab {
+  background: none;
+  border: none;
+  padding: 12px 16px;
+  font-size: 14px;
+  font-weight: 500;
+  color: #a3a3a3;
+  cursor: pointer;
+  border-bottom: 2px solid transparent;
+  transition: all 0.2s;
+}
+
+.match-tab:hover {
+  color: #ffffff;
+}
+
+.match-tab.active {
+  color: #9333ea;
+  border-bottom-color: #9333ea;
 }
 
 .commentary-filters {
