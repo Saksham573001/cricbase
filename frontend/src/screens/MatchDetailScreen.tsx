@@ -304,6 +304,7 @@ export const MatchDetailScreen: React.FC = () => {
             <>
               {filteredDeliveries.map((delivery) => {
                 const isCommentary = delivery._type === 'commentary';
+                const hasOverBall = !isCommentary && (delivery.over > 0 || delivery.ball > 0);
                 return (
                   <div
                     key={delivery.id}
@@ -313,7 +314,7 @@ export const MatchDetailScreen: React.FC = () => {
                       borderLeft: delivery.isWicket ? `3px solid ${theme.colors.cricketRed}` : 'none',
                     }}
                   >
-                    {!isCommentary && (
+                    {hasOverBall && (
                       <>
                         <div className="commentary-header">
                           <div className="over-ball">{delivery.over}.{delivery.ball}</div>
