@@ -223,28 +223,6 @@ export const MatchDetailScreen: React.FC = () => {
           <div className="team-scores">
             <div className="team-score-item">
               <img 
-                src={match.team2Logo || `https://flagcdn.com/w40/${match.team2.toLowerCase().replace(/\s+/g, '-')}.png`}
-                alt={match.team2}
-                className="team-flag"
-                onError={(e) => {
-                  const target = e.target as HTMLImageElement;
-                  target.src = `https://flagcdn.com/w40/nz.png`;
-                }}
-              />
-              <div className="team-score-details">
-                <div className="team-name">{match.team2.substring(0, 3).toUpperCase()}</div>
-                {match.score?.team2 ? (
-                  <div className="team-score-text">
-                    {match.score.team2.runs}-{match.score.team2.wickets}
-                    {match.score.team2.overs && ` (${match.score.team2.overs.toFixed(1)})`}
-                  </div>
-                ) : (
-                  <div className="team-score-text">-</div>
-                )}
-              </div>
-            </div>
-            <div className="team-score-item">
-              <img 
                 src={match.team1Logo || `https://flagcdn.com/w40/${match.team1.toLowerCase().replace(/\s+/g, '-')}.png`}
                 alt={match.team1}
                 className="team-flag"
@@ -257,8 +235,30 @@ export const MatchDetailScreen: React.FC = () => {
                 <div className="team-name">{match.team1.substring(0, 3).toUpperCase()}</div>
                 {match.score?.team1 ? (
                   <div className="team-score-text">
-                    {match.score.team1.overs && `(${match.score.team1.overs.toFixed(1)}) `}
                     {match.score.team1.runs}-{match.score.team1.wickets}
+                    {match.score.team1.overs && ` (${match.score.team1.overs.toFixed(1)})`}
+                  </div>
+                ) : (
+                  <div className="team-score-text">-</div>
+                )}
+              </div>
+            </div>
+            <div className="team-score-item">
+              <img 
+                src={match.team2Logo || `https://flagcdn.com/w40/${match.team2.toLowerCase().replace(/\s+/g, '-')}.png`}
+                alt={match.team2}
+                className="team-flag"
+                onError={(e) => {
+                  const target = e.target as HTMLImageElement;
+                  target.src = `https://flagcdn.com/w40/nz.png`;
+                }}
+              />
+              <div className="team-score-details">
+                <div className="team-name">{match.team2.substring(0, 3).toUpperCase()}</div>
+                {match.score?.team2 ? (
+                  <div className="team-score-text">
+                    {match.score.team2.overs && `(${match.score.team2.overs.toFixed(1)}) `}
+                    {match.score.team2.runs}-{match.score.team2.wickets}
                   </div>
                 ) : (
                   <div className="team-score-text">-</div>
