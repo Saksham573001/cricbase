@@ -57,6 +57,15 @@ except ImportError as e:
     print(f"Warning: Could not initialize Live Matches API: {e}. Proceeding without it.")
     live_matches_api = None
 
+# Initialize CricAPI Commentary (for fetching deliveries)
+try:
+    from cricapi_commentary import CricAPICommentary
+    cricapi_commentary = CricAPICommentary()
+    print("CricAPI Commentary initialized successfully.")
+except ImportError as e:
+    print(f"Warning: Could not initialize CricAPI Commentary: {e}. Proceeding without it.")
+    cricapi_commentary = None
+
 security = HTTPBearer()
 
 # Pydantic models
