@@ -428,20 +428,52 @@ async def get_match_deliveries(match_id: str, last_doc_id: Optional[int] = None)
                 except (ValueError, AttributeError):
                     runs = 0
                 
-                # Parse wicket info
-                is_wicket = ball_feed.get("is_catch_drop", False) == True or "wicket" in str(ball_feed.get("c2", "")).lower()
+                # Parse wicket info - check for explicit wicket indicators
+                # Only mark as wicket if there's a clear wicket indication, not just the word "wicket" in commentary
+                is_wicket = False
                 wicket_type = None
+                
+                # Check for explicit wicket field or clear wicket indicators
+                commentary_lower = str(ball_feed.get("c2", "")).lower()
+                
+                # Look for explicit wicket indicators (not just the word "wicket" which might appear in other contexts)
+                wicket_indicators = [
+                    "wicket!", "wicket.", "wicket,", "wicket:", "wicket;",
+                    "bowled", "caught", "lbw", "leg before wicket", "run out", "stumped",
+                    "dismissed", "out!", "out.", "out,", "out:", "out;"
+                ]
+                
+                # Check if any wicket indicator appears in commentary
+                has_wicket_indicator = any(indicator in commentary_lower for indicator in wicket_indicators)
+                
+                # Also check if runs are 0 and there's a wicket mention (likely a wicket)
+                runs_str = ball_feed.get("b", "0")
+                runs_value = 0
+                try:
+                    if "+" in runs_str:
+                        runs_value = int(runs_str.split("+")[0])
+                    else:
+                        runs_value = int(runs_str)
+                except (ValueError, AttributeError):
+                    runs_value = 0
+                
+                # Mark as wicket if there's a clear wicket indicator
+                # OR if runs are 0 and there's a wicket mention (but not if runs > 0)
+                if has_wicket_indicator and runs_value == 0:
+                    is_wicket = True
+                elif ball_feed.get("is_catch_drop", False) == True:
+                    is_wicket = True
+                
                 if is_wicket:
-                    commentary = ball_feed.get("c2", "").lower()
-                    if "bowled" in commentary:
+                    if "bowled" in commentary_lower:
                         wicket_type = "bowled"
-                    elif "caught" in commentary:
+                    elif "caught" in commentary_lower:
                         wicket_type = "caught"
-                    elif "lbw" in commentary or "leg before" in commentary:
+                    elif "lbw" in commentary_lower or "leg before" in commentary_lower:
                         wicket_type = "lbw"
-                    elif "run out" in commentary:
+                    elif "run out" in commentary_lower:
                         wicket_type = "run out"
-                    elif "stumped" in commentary:
+                    elif "stumped" in commentary_lower:
                         wicket_type = "stumped"
                 
                 # Parse bowler and batsman from "c1" field (e.g., "K Clarke to K Rahul")
