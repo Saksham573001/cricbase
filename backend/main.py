@@ -5,6 +5,8 @@ from pydantic import BaseModel
 from typing import List, Optional
 from datetime import datetime
 import os
+import re
+import httpx
 from dotenv import load_dotenv
 from supabase import create_client, Client
 
