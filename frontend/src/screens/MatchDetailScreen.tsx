@@ -309,9 +309,8 @@ export const MatchDetailScreen: React.FC = () => {
                     key={delivery.id}
                     className={`commentary-item ${delivery.isWicket ? 'wicket-item' : ''} ${isCommentary ? 'commentary-text-item' : ''}`}
                     style={{
-                      backgroundColor: delivery.isWicket ? 'rgba(220, 38, 38, 0.1)' : isCommentary ? 'rgba(147, 51, 234, 0.05)' : 'transparent',
-                      borderLeft: delivery.isWicket ? `3px solid ${theme.colors.cricketRed}` : isCommentary ? `3px solid ${theme.colors.primary}` : 'none',
-                      paddingLeft: isCommentary ? '20px' : undefined,
+                      backgroundColor: delivery.isWicket ? 'rgba(220, 38, 38, 0.1)' : 'transparent',
+                      borderLeft: delivery.isWicket ? `3px solid ${theme.colors.cricketRed}` : 'none',
                     }}
                   >
                     {!isCommentary && (
