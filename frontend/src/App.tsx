@@ -3,6 +3,7 @@ import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-d
 import { TopNavigation } from './components/TopNavigation';
 import { FeedScreen } from './screens/FeedScreen';
 import { DeliveryDetailScreen } from './screens/DeliveryDetailScreen';
+import { MatchDetailScreen } from './screens/MatchDetailScreen';
 import { theme } from './theme';
 import './App.css';
 
@@ -14,6 +15,7 @@ function App() {
         <Routes>
           <Route path="/" element={<Navigate to="/feed" replace />} />
           <Route path="/feed" element={<FeedScreen />} />
+          <Route path="/match/:id" element={<MatchDetailScreen />} />
           <Route path="/delivery/:id" element={<DeliveryDetailScreen />} />
         </Routes>
       </div>

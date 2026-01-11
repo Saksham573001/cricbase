@@ -1,4 +1,5 @@
 import React from 'react';
+import { useNavigate } from 'react-router-dom';
 import { Match } from '../types';
 import { theme } from '../theme';
 import './MatchCard.css';
@@ -8,6 +9,7 @@ interface MatchCardProps {
 }
 
 export const MatchCard: React.FC<MatchCardProps> = ({ match }) => {
+  const navigate = useNavigate();
 
   const getStatusColor = (status: Match['status']) => {
     switch (status) {
@@ -38,6 +40,7 @@ export const MatchCard: React.FC<MatchCardProps> = ({ match }) => {
   return (
     <div
       className="match-card"
+      onClick={() => navigate(`/match/${match.id}`)}
       style={{
         backgroundColor: theme.colors.surface,
         borderColor: theme.colors.border,
