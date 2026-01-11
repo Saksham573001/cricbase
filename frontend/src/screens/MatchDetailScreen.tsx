@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { Match, Delivery } from '../types';
 import { api } from '../config/api';
@@ -13,7 +13,10 @@ export const MatchDetailScreen: React.FC = () => {
   const [match, setMatch] = useState<Match | null>(null);
   const [deliveries, setDeliveries] = useState<Delivery[]>([]);
   const [loading, setLoading] = useState(true);
+  const [loadingMore, setLoadingMore] = useState(false);
+  const [hasMore, setHasMore] = useState(true);
   const [filter, setFilter] = useState<CommentaryFilter>('all');
+  const observerTarget = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     if (id) {
@@ -21,6 +24,15 @@ export const MatchDetailScreen: React.FC = () => {
       fetchDeliveries();
     }
   }, [id]);
+
+  useEffect(() => {
+    // Reset deliveries when filter changes
+    if (id) {
+      setDeliveries([]);
+      setHasMore(true);
+      fetchDeliveries();
+    }
+  }, [filter]);
 
   const fetchMatch = async () => {
     try {
@@ -33,14 +45,73 @@ export const MatchDetailScreen: React.FC = () => {
     }
   };
 
-  const fetchDeliveries = async () => {
+  const fetchDeliveries = async (lastDocId?: string) => {
     try {
-      const response = await api.get(`/deliveries/match/${id}`);
-      setDeliveries(response.data);
+      if (lastDocId) {
+        setLoadingMore(true);
+      } else {
+        setLoading(true);
+      }
+
+      const params: any = {};
+      if (lastDocId) {
+        params.last_doc_id = lastDocId;
+      }
+
+      const response = await api.get(`/deliveries/match/${id}`, { params });
+      const newDeliveries = response.data;
+
+      if (lastDocId) {
+        // Append new deliveries (they come in reverse chronological order)
+        setDeliveries(prev => [...prev, ...newDeliveries]);
+      } else {
+        // Initial load
+        setDeliveries(newDeliveries);
+      }
+
+      // Check if there are more deliveries to load
+      if (newDeliveries.length === 0) {
+        setHasMore(false);
+      }
     } catch (error) {
       console.error('Error fetching match deliveries:', error);
+    } finally {
+      setLoading(false);
+      setLoadingMore(false);
     }
   };
+
+  const loadMore = useCallback(() => {
+    if (loadingMore || !hasMore || deliveries.length === 0) return;
+
+    // Get the last delivery's ID and extract the numeric part for lastDocId
+    const lastDelivery = deliveries[deliveries.length - 1];
+    const lastDocId = lastDelivery.id.split('_')[1]; // Extract numeric part from "V6C_1768145205762"
+    
+    fetchDeliveries(lastDocId);
+  }, [deliveries, loadingMore, hasMore]);
+
+  useEffect(() => {
+    const observer = new IntersectionObserver(
+      entries => {
+        if (entries[0].isIntersecting && hasMore && !loadingMore) {
+          loadMore();
+        }
+      },
+      { threshold: 0.1 }
+    );
+
+    const currentTarget = observerTarget.current;
+    if (currentTarget) {
+      observer.observe(currentTarget);
+    }
+
+    return () => {
+      if (currentTarget) {
+        observer.unobserve(currentTarget);
+      }
+    };
+  }, [loadMore, hasMore, loadingMore]);
 
   const getFilteredDeliveries = () => {
     switch (filter) {
@@ -81,13 +152,13 @@ export const MatchDetailScreen: React.FC = () => {
     }
     // Fallback to last delivery's over
     if (deliveries.length > 0) {
-      const last = deliveries[deliveries.length - 1];
+      const last = deliveries[0]; // Most recent is first in reverse chronological
       return `${last.over}.${last.ball}`;
     }
     return '0.0';
   };
 
-  if (loading) {
+  if (loading && deliveries.length === 0) {
     return (
       <div className="match-detail-screen" style={{ backgroundColor: theme.colors.background }}>
         <div className="loading">Loading match...</div>
@@ -164,38 +235,49 @@ export const MatchDetailScreen: React.FC = () => {
 
         {/* Commentary Feed */}
         <div className="commentary-feed">
-          {filteredDeliveries.length === 0 ? (
+          {filteredDeliveries.length === 0 && !loading ? (
             <div className="empty-state">No commentary available</div>
           ) : (
-            filteredDeliveries.map((delivery) => (
-              <div
-                key={delivery.id}
-                className={`commentary-item ${delivery.isWicket ? 'wicket-item' : ''}`}
-                style={{
-                  backgroundColor: delivery.isWicket ? 'rgba(220, 38, 38, 0.1)' : 'transparent',
-                  borderLeft: delivery.isWicket ? `3px solid ${theme.colors.cricketRed}` : 'none',
-                }}
-              >
-                <div className="commentary-header">
-                  <div className="over-ball">{delivery.over}.{delivery.ball}</div>
-                  <div 
-                    className="run-badge"
-                    style={{
-                      backgroundColor: getRunBadgeColor(delivery),
-                      color: '#ffffff',
-                    }}
-                  >
-                    {delivery.isWicket ? 'W' : delivery.runs}
+            <>
+              {filteredDeliveries.map((delivery) => (
+                <div
+                  key={delivery.id}
+                  className={`commentary-item ${delivery.isWicket ? 'wicket-item' : ''}`}
+                  style={{
+                    backgroundColor: delivery.isWicket ? 'rgba(220, 38, 38, 0.1)' : 'transparent',
+                    borderLeft: delivery.isWicket ? `3px solid ${theme.colors.cricketRed}` : 'none',
+                  }}
+                >
+                  <div className="commentary-header">
+                    <div className="over-ball">{delivery.over}.{delivery.ball}</div>
+                    <div 
+                      className="run-badge"
+                      style={{
+                        backgroundColor: getRunBadgeColor(delivery),
+                        color: '#ffffff',
+                      }}
+                    >
+                      {delivery.isWicket ? 'W' : delivery.runs}
+                    </div>
+                  </div>
+                  <div className="bowler-batsman" style={{ color: theme.colors.textSecondary }}>
+                    {delivery.bowler} to {delivery.batsman}
+                  </div>
+                  <div className="commentary-text" style={{ color: theme.colors.text }}>
+                    {delivery.description}
                   </div>
                 </div>
-                <div className="bowler-batsman" style={{ color: theme.colors.textSecondary }}>
-                  {delivery.bowler} to {delivery.batsman}
+              ))}
+              
+              {/* Infinite scroll trigger */}
+              {hasMore && (
+                <div ref={observerTarget} className="scroll-trigger">
+                  {loadingMore && (
+                    <div className="loading-more">Loading more commentary...</div>
+                  )}
                 </div>
-                <div className="commentary-text" style={{ color: theme.colors.text }}>
-                  {delivery.description}
-                </div>
-              </div>
-            ))
+              )}
+            </>
           )}
         </div>
       </div>

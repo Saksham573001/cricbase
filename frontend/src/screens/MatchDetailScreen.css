@@ -174,6 +174,42 @@
   font-size: 16px;
 }
 
+.scroll-trigger {
+  height: 20px;
+  margin: 20px 0;
+}
+
+.loading-more {
+  text-align: center;
+  padding: 20px;
+  color: #a3a3a3;
+  font-size: 14px;
+}
+
+.commentary-feed {
+  max-height: calc(100vh - 300px);
+  overflow-y: auto;
+  scrollbar-width: thin;
+  scrollbar-color: #2a2a2a transparent;
+}
+
+.commentary-feed::-webkit-scrollbar {
+  width: 6px;
+}
+
+.commentary-feed::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+.commentary-feed::-webkit-scrollbar-thumb {
+  background-color: #2a2a2a;
+  border-radius: 3px;
+}
+
+.commentary-feed::-webkit-scrollbar-thumb:hover {
+  background-color: #3a3a3a;
+}
+
 @media (max-width: 768px) {
   .match-detail-screen {
     padding: 16px;

@@ -316,15 +316,29 @@ async def get_deliveries_feed(limit: int = 20):
         return get_mock_deliveries()
 
 @app.get("/deliveries/match/{match_id}", response_model=List[Delivery])
-async def get_match_deliveries(match_id: str):
-    """Get all deliveries for a specific match. Calls CricAPI Commentary API first, then falls back to Supabase."""
+async def get_match_deliveries(match_id: str, last_doc_id: Optional[int] = None):
+    """Get deliveries for a specific match. Calls CricAPI Commentary API first, then falls back to Supabase.
+    
+    Args:
+        match_id: The match ID
+        last_doc_id: Optional last document ID for pagination (from the last delivery's id field)
+    """
     try:
         # Try CricAPI Commentary API first
         if cricapi_commentary:
             try:
-                api_deliveries = await cricapi_commentary.get_match_deliveries(match_id)
+                # Extract numeric ID from last_doc_id if it's a string like "V6C_1768145205762"
+                last_doc_id_numeric = None
+                if last_doc_id:
+                    if isinstance(last_doc_id, str) and '_' in last_doc_id:
+                        # Extract the numeric part after the underscore
+                        last_doc_id_numeric = int(last_doc_id.split('_')[1])
+                    else:
+                        last_doc_id_numeric = int(last_doc_id)
+                
+                api_deliveries = await cricapi_commentary.get_match_deliveries(match_id, last_doc_id=last_doc_id_numeric)
                 if api_deliveries:
-                    print(f"Fetched {len(api_deliveries)} deliveries from CricAPI Commentary for match {match_id}")
+                    print(f"Fetched {len(api_deliveries)} deliveries from CricAPI Commentary for match {match_id} (lastDocId: {last_doc_id_numeric})")
                     return api_deliveries
             except Exception as api_error:
                 print(f"Error calling CricAPI Commentary for match {match_id}: {api_error}. Falling back to Supabase.")

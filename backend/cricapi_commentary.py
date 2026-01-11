@@ -141,17 +141,22 @@ class CricAPICommentary:
             "commentCount": 0  # Default, can be updated from database
         }
 
-    async def get_match_deliveries(self, match_id: str) -> List[Dict]:
-        """Get all deliveries for a match, transformed to our schema"""
+    async def get_match_deliveries(self, match_id: str, last_doc_id: Optional[int] = None) -> List[Dict]:
+        """Get deliveries for a match, transformed to our schema
+        
+        Args:
+            match_id: The match key
+            last_doc_id: Optional last document ID for pagination (from the last delivery's id field)
+        """
         try:
-            ball_feeds = await self.get_ball_feeds(match_id)
+            ball_feeds = await self.get_ball_feeds(match_id, last_doc_id=last_doc_id)
             deliveries = []
             for ball_feed in ball_feeds:
                 delivery = self.transform_ball_feed_to_delivery(ball_feed, match_id)
                 deliveries.append(delivery)
             
-            # Sort by over and ball
-            deliveries.sort(key=lambda x: (x["over"], x["ball"]))
+            # Sort by over and ball (most recent first for reverse chronological order)
+            deliveries.sort(key=lambda x: (x["over"], x["ball"]), reverse=True)
             return deliveries
         except Exception as e:
             print(f"Error getting match deliveries: {e}")
