@@ -127,10 +127,15 @@ export const MatchDetailScreen: React.FC = () => {
   };
 
   const getRunBadgeColor = (delivery: Delivery) => {
+    if (delivery.isWicket) return '#dc2626'; // Red for wicket (check first to prevent six/four from overriding)
     if (delivery.isSix) return '#22c55e'; // Green for six
     if (delivery.isFour) return '#3b82f6'; // Blue for four
-    if (delivery.isWicket) return '#dc2626'; // Red for wicket
     return '#404040'; // Dark grey for regular runs
+  };
+  
+  const getRunBadgeContent = (delivery: Delivery) => {
+    if (delivery.isWicket) return 'W';
+    return delivery.runs.toString();
   };
 
   const getCurrentBattingTeam = () => {
