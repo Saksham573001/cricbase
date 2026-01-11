@@ -19,6 +19,7 @@ export const DeliveryDetailScreen: React.FC = () => {
       fetchDelivery();
       fetchComments();
     }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [id]);
 
   const fetchDelivery = async () => {
@@ -81,7 +82,7 @@ export const DeliveryDetailScreen: React.FC = () => {
     if (!id) return;
 
     try {
-      const response = await api.post(`/deliveries/${id}/comments`, {
+      await api.post(`/deliveries/${id}/comments`, {
         content,
         parentId,
       });

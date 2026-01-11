@@ -1,14 +1,12 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Delivery, Match } from '../types';
+import { Delivery } from '../types';
 import { api } from '../config/api';
-import { theme } from '../theme';
 import './TrendingSidebar.css';
 
 export const TrendingSidebar: React.FC = () => {
   const navigate = useNavigate();
   const [trendingDeliveries, setTrendingDeliveries] = useState<Delivery[]>([]);
-  const [trendingMatches, setTrendingMatches] = useState<Match[]>([]);
 
   useEffect(() => {
     fetchTrendingData();
@@ -19,10 +17,6 @@ export const TrendingSidebar: React.FC = () => {
       // Fetch most commented deliveries
       const deliveriesResponse = await api.get('/deliveries/feed', { params: { limit: 5 } });
       setTrendingDeliveries(deliveriesResponse.data.slice(0, 3));
-
-      // Fetch live/upcoming matches
-      const matchesResponse = await api.get('/matches', { params: { status: 'live' } });
-      setTrendingMatches(matchesResponse.data.slice(0, 3));
     } catch (error) {
       console.error('Error fetching trending data:', error);
     }

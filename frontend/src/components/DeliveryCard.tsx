@@ -1,8 +1,6 @@
 import React from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Delivery } from '../types';
-import { theme } from '../theme';
-import { format } from 'date-fns';
 import './DeliveryCard.css';
 
 interface DeliveryCardProps {
@@ -12,13 +10,6 @@ interface DeliveryCardProps {
 
 export const DeliveryCard: React.FC<DeliveryCardProps> = ({ delivery, matchInfo }) => {
   const navigate = useNavigate();
-
-  const getDeliveryColor = () => {
-    if (delivery.isSix) return theme.colors.cricketGreen;
-    if (delivery.isFour) return theme.colors.primary;
-    if (delivery.isWicket) return theme.colors.cricketRed;
-    return theme.colors.textSecondary;
-  };
 
   const getDeliveryIcon = () => {
     if (delivery.isSix) return '6️⃣';

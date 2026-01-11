@@ -50,7 +50,7 @@ export const MatchCard: React.FC<MatchCardProps> = ({ match }) => {
       <div className="match-teams">
         <div className="team">
           <span className="team-name">{match.team1}</span>
-          {match.score && (
+          {match.score && match.score.team1 && (
             <span className="team-score">
               {match.score.team1.runs}/{match.score.team1.wickets} ({match.score.team1.overs} ov)
             </span>
@@ -59,7 +59,7 @@ export const MatchCard: React.FC<MatchCardProps> = ({ match }) => {
         <div className="vs">vs</div>
         <div className="team">
           <span className="team-name">{match.team2}</span>
-          {match.score && (
+          {match.score && match.score.team2 && (
             <span className="team-score">
               {match.score.team2.runs}/{match.score.team2.wickets} ({match.score.team2.overs} ov)
             </span>
