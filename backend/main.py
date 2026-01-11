@@ -465,22 +465,24 @@ async def get_match_deliveries(match_id: str, last_doc_id: Optional[int] = None)
                 # Generate delivery ID from match_id and feed_id
                 delivery_id = f"{match_id}_{feed_id}"
                 
-                deliveries.append({
-                    "id": delivery_id,
-                    "matchId": match_id,
-                    "over": over,
-                    "ball": ball,
-                    "bowler": bowler,
-                    "batsman": batsman,
-                    "runs": runs,
-                    "isWicket": is_wicket,
-                    "wicketType": wicket_type,
-                    "isFour": is_four,
-                    "isSix": is_six,
-                    "description": description,
-                    "timestamp": timestamp,
-                    "commentCount": 0
-                })
+                # Only add ball deliveries if over > 0 or (over == 0 and ball > 0)
+                if over > 0 or (over == 0 and ball > 0):
+                    deliveries.append({
+                        "id": delivery_id,
+                        "matchId": match_id,
+                        "over": over,
+                        "ball": ball,
+                        "bowler": bowler,
+                        "batsman": batsman,
+                        "runs": runs,
+                        "isWicket": is_wicket,
+                        "wicketType": wicket_type,
+                        "isFour": is_four,
+                        "isSix": is_six,
+                        "description": description,
+                        "timestamp": timestamp,
+                        "commentCount": 0
+                    })
             
             # Sort by timestamp (most recent first for reverse chronological order)
             # For items with same timestamp, sort by over and ball
