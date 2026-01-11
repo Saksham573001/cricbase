@@ -482,8 +482,9 @@ async def get_match_deliveries(match_id: str, last_doc_id: Optional[int] = None)
                     "commentCount": 0
                 })
             
-            # Sort by over and ball (most recent first for reverse chronological order)
-            deliveries.sort(key=lambda x: (x["over"], x["ball"]), reverse=True)
+            # Sort by timestamp (most recent first for reverse chronological order)
+            # For items with same timestamp, sort by over and ball
+            deliveries.sort(key=lambda x: (x.get("timestamp", ""), x.get("over", 0), x.get("ball", 0)), reverse=True)
             
             print(f"Fetched {len(deliveries)} deliveries from CricAPI Commentary for match {match_id} (lastDocId: {last_doc_id_numeric})")
             return deliveries
