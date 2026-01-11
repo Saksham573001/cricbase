@@ -134,9 +134,15 @@ export const MatchCard: React.FC<MatchCardProps> = ({ match }) => {
 
       <div className="match-teams">
         <div className="team">
-          {match.team1Logo && (
-            <img src={match.team1Logo} alt={match.team1} className="team-logo" />
-          )}
+          <img 
+            src={match.team1Logo || `https://flagcdn.com/w40/xx.png`} 
+            alt={match.team1} 
+            className="team-logo"
+            onError={(e) => {
+              // Fallback to placeholder if flag fails to load
+              (e.target as HTMLImageElement).src = 'https://flagcdn.com/w40/xx.png';
+            }}
+          />
           <div className="team-info">
             <span className="team-name">{match.team1}</span>
             {match.score && match.score.team1 && (
@@ -147,9 +153,15 @@ export const MatchCard: React.FC<MatchCardProps> = ({ match }) => {
           </div>
         </div>
         <div className="team">
-          {match.team2Logo && (
-            <img src={match.team2Logo} alt={match.team2} className="team-logo" />
-          )}
+          <img 
+            src={match.team2Logo || `https://flagcdn.com/w40/xx.png`} 
+            alt={match.team2} 
+            className="team-logo"
+            onError={(e) => {
+              // Fallback to placeholder if flag fails to load
+              (e.target as HTMLImageElement).src = 'https://flagcdn.com/w40/xx.png';
+            }}
+          />
           <div className="team-info">
             <span className="team-name">{match.team2}</span>
             {match.score && match.score.team2 && (

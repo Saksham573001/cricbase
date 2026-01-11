@@ -6,6 +6,7 @@ import httpx
 import re
 from typing import List, Dict, Optional
 from datetime import datetime
+from team_mapping import get_team_info, map_team_code, get_team_flag, get_team_short_name
 
 LIVE_MATCHES_API_URL = "https://api-v1.com/w/liveMatches2.php"
 
@@ -78,18 +79,20 @@ class LiveMatchesAPI:
         """Transform Live Matches API format to our schema"""
         match_id = match_data.get("_id", "")
         
-        # Team codes (b and c) - we'll use these as team names for now
-        # You may want to create a team code mapping later
+        # Team codes (b and c) - map to full team names
         team1_code = match_data.get("b", "Team 1")
         team2_code = match_data.get("c", "Team 2")
         
-        # Try to get team names from other fields if available
-        team1 = team1_code
-        team2 = team2_code
+        # Map team codes to full team names
+        team1_info = get_team_info(team1_code)
+        team2_info = get_team_info(team2_code)
         
-        # Get team logos
-        team1_logo = match_data.get("fi")
-        team2_logo = None  # API seems to only provide one logo field
+        team1 = team1_info["name"]
+        team2 = team2_info["name"]
+        
+        # Get team logos - prefer flag from mapping, fallback to API logo
+        team1_logo = match_data.get("fi") or team1_info["flag"]
+        team2_logo = team2_info["flag"]  # API seems to only provide one logo field, use flag for team2
         
         # Parse scores
         score_j = match_data.get("j", "")
