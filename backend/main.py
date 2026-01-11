@@ -48,6 +48,15 @@ if cricket_data_api_key:
 else:
     print("CRICKET_DATA_API_KEY not set. Proceeding without external API.")
 
+# Initialize Live Matches API (preferred for live matches)
+try:
+    from live_matches_api import LiveMatchesAPI
+    live_matches_api = LiveMatchesAPI()
+    print("Live Matches API initialized successfully.")
+except ImportError as e:
+    print(f"Warning: Could not initialize Live Matches API: {e}. Proceeding without it.")
+    live_matches_api = None
+
 security = HTTPBearer()
 
 # Pydantic models
@@ -144,9 +153,26 @@ async def root():
 
 @app.get("/matches", response_model=List[Match])
 async def get_matches(status: Optional[str] = None, offset: int = 0):
-    """Get all matches, optionally filtered by status. Calls Cricket Data API internally."""
+    """Get all matches, optionally filtered by status. Uses Live Matches API preferentially."""
     try:
-        # Try to get matches from Cricket Data API first
+        # Try Live Matches API first (preferred for live matches)
+        if live_matches_api:
+            try:
+                api_matches = await live_matches_api.get_live_matches()
+                
+                # Transform API matches to our schema
+                matches = [live_matches_api.transform_match_to_schema(match) for match in api_matches]
+                
+                # Filter by status if needed
+                if status:
+                    matches = [m for m in matches if m.get("status") == status]
+                
+                print(f"Fetched {len(matches)} matches from Live Matches API")
+                return matches
+            except Exception as api_error:
+                print(f"Error calling Live Matches API: {api_error}. Trying Cricket Data API.")
+        
+        # Fallback to Cricket Data API
         if cricket_api:
             try:
                 if status == "live":
@@ -189,7 +215,7 @@ async def get_matches(status: Optional[str] = None, offset: int = 0):
         #         "currentBall": item.get("current_ball")
         #     }
         #     matches.append(match_data)
-        return matches
+        return []
     except Exception as e:
         print(f"Error fetching matches: {e}")
         # Return mock data for development
