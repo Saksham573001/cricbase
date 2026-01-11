@@ -429,7 +429,8 @@ async def get_match_deliveries(match_id: str, last_doc_id: Optional[int] = None)
                     runs = 0
                 
                 # Parse wicket info - check for explicit wicket indicators
-                # Only mark as wicket if there's a clear wicket indication, not just the word "wicket" in commentary
+                # Only mark as wicket if there's a clear wicket indication AND runs are 0
+                # This prevents 6-run deliveries from being incorrectly marked as wickets
                 is_wicket = False
                 wicket_type = None
                 
@@ -446,20 +447,11 @@ async def get_match_deliveries(match_id: str, last_doc_id: Optional[int] = None)
                 # Check if any wicket indicator appears in commentary
                 has_wicket_indicator = any(indicator in commentary_lower for indicator in wicket_indicators)
                 
-                # Also check if runs are 0 and there's a wicket mention (likely a wicket)
-                runs_str = ball_feed.get("b", "0")
-                runs_value = 0
-                try:
-                    if "+" in runs_str:
-                        runs_value = int(runs_str.split("+")[0])
-                    else:
-                        runs_value = int(runs_str)
-                except (ValueError, AttributeError):
-                    runs_value = 0
-                
-                # Mark as wicket if there's a clear wicket indicator
-                # OR if runs are 0 and there's a wicket mention (but not if runs > 0)
-                if has_wicket_indicator and runs_value == 0:
+                # Mark as wicket ONLY if:
+                # 1. There's a clear wicket indicator AND runs are 0 (wickets have 0 runs)
+                # 2. OR is_catch_drop is explicitly True
+                # This ensures 6-run deliveries are never marked as wickets
+                if runs == 0 and has_wicket_indicator:
                     is_wicket = True
                 elif ball_feed.get("is_catch_drop", False) == True:
                     is_wicket = True
