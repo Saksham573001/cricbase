@@ -57,14 +57,6 @@ except ImportError as e:
     print(f"Warning: Could not initialize Live Matches API: {e}. Proceeding without it.")
     live_matches_api = None
 
-# Initialize CricAPI Commentary (for fetching deliveries)
-try:
-    from cricapi_commentary import CricAPICommentary
-    cricapi_commentary = CricAPICommentary()
-    print("CricAPI Commentary initialized successfully.")
-except ImportError as e:
-    print(f"Warning: Could not initialize CricAPI Commentary: {e}. Proceeding without it.")
-    cricapi_commentary = None
 
 security = HTTPBearer()
 
@@ -317,56 +309,144 @@ async def get_deliveries_feed(limit: int = 20):
 
 @app.get("/deliveries/match/{match_id}", response_model=List[Delivery])
 async def get_match_deliveries(match_id: str, last_doc_id: Optional[int] = None):
-    """Get deliveries for a specific match. Calls CricAPI Commentary API first, then falls back to Supabase.
+    """Get deliveries for a specific match. Calls CricAPI Commentary API directly.
     
     Args:
         match_id: The match ID
         last_doc_id: Optional last document ID for pagination (from the last delivery's id field)
     """
     try:
-        # Try CricAPI Commentary API first
-        if cricapi_commentary:
-            try:
-                # Extract numeric ID from last_doc_id if it's a string like "V6C_1768145205762"
-                last_doc_id_numeric = None
-                if last_doc_id:
-                    if isinstance(last_doc_id, str) and '_' in last_doc_id:
-                        # Extract the numeric part after the underscore
-                        last_doc_id_numeric = int(last_doc_id.split('_')[1])
-                    else:
-                        last_doc_id_numeric = int(last_doc_id)
-                
-                api_deliveries = await cricapi_commentary.get_match_deliveries(match_id, last_doc_id=last_doc_id_numeric)
-                if api_deliveries:
-                    print(f"Fetched {len(api_deliveries)} deliveries from CricAPI Commentary for match {match_id} (lastDocId: {last_doc_id_numeric})")
-                    return api_deliveries
-            except Exception as api_error:
-                print(f"Error calling CricAPI Commentary for match {match_id}: {api_error}. Falling back to Supabase.")
+        # Extract numeric ID from last_doc_id if it's a string like "V6C_1768145205762"
+        last_doc_id_numeric = None
+        if last_doc_id:
+            if isinstance(last_doc_id, str) and '_' in last_doc_id:
+                # Extract the numeric part after the underscore
+                last_doc_id_numeric = int(last_doc_id.split('_')[1])
+            else:
+                last_doc_id_numeric = int(last_doc_id)
         
-        # Fallback to Supabase
-        result = supabase.table("deliveries").select("*").eq("match_id", match_id).order("over", desc=False).order("ball", desc=False).execute()
-        # Convert snake_case to camelCase
-        deliveries = []
-        for item in result.data:
-            delivery = {
-                "id": item.get("id"),
-                "matchId": item.get("match_id"),
-                "over": item.get("over"),
-                "ball": item.get("ball"),
-                "bowler": item.get("bowler"),
-                "batsman": item.get("batsman"),
-                "runs": item.get("runs", 0),
-                "isWicket": item.get("is_wicket", False),
-                "wicketType": item.get("wicket_type"),
-                "isFour": item.get("is_four", False),
-                "isSix": item.get("is_six", False),
-                "description": item.get("description"),
-                "timestamp": item.get("timestamp") or item.get("created_at"),
-                "commentCount": item.get("comment_count", 0)
+        # Call CricAPI Commentary API directly
+        payload = {
+            "matchKey": match_id,
+            "lastDocId": last_doc_id_numeric or 0,
+            "filters": {
+                "highlights": False,
+                "overs": False,
+                "wickets": False,
+                "sixes": False,
+                "fours": False,
+                "firstInning": False,
+                "secondInning": False,
+                "milestones": False,
+                "thirdInning": False,
+                "fourthInning": False
             }
-            deliveries.append(delivery)
-        return deliveries
+        }
+        
+        async with httpx.AsyncClient() as client:
+            response = await client.post(
+                "https://content.crickapi.com/commentary/getBallFeeds",
+                json=payload,
+                timeout=30.0
+            )
+            response.raise_for_status()
+            data = response.json()
+            
+            # Filter for ball deliveries (type: "b")
+            ball_feeds = [item for item in data if item.get("type") == "b"]
+            
+            # Transform ball feeds to Delivery schema
+            deliveries = []
+            for ball_feed in ball_feeds:
+                # Parse over and ball from "o" field (e.g., "48.4" -> over: 48, ball: 4)
+                over_ball = ball_feed.get("o", "")
+                over = 0
+                ball = 0
+                if over_ball:
+                    try:
+                        over_ball_parts = over_ball.split(".")
+                        over = int(over_ball_parts[0]) if over_ball_parts[0] else 0
+                        ball = int(over_ball_parts[1]) if len(over_ball_parts) > 1 and over_ball_parts[1] else 0
+                    except (ValueError, IndexError):
+                        pass
+                
+                # Parse runs from "b" field (e.g., "4", "1", "0+1")
+                runs_str = ball_feed.get("b", "0")
+                runs = 0
+                is_four = False
+                is_six = False
+                try:
+                    if "+" in runs_str:
+                        runs = int(runs_str.split("+")[0])
+                    else:
+                        runs = int(runs_str)
+                    is_four = runs == 4
+                    is_six = runs == 6
+                except (ValueError, AttributeError):
+                    runs = 0
+                
+                # Parse wicket info
+                is_wicket = ball_feed.get("is_catch_drop", False) == True or "wicket" in str(ball_feed.get("c2", "")).lower()
+                wicket_type = None
+                if is_wicket:
+                    commentary = ball_feed.get("c2", "").lower()
+                    if "bowled" in commentary:
+                        wicket_type = "bowled"
+                    elif "caught" in commentary:
+                        wicket_type = "caught"
+                    elif "lbw" in commentary or "leg before" in commentary:
+                        wicket_type = "lbw"
+                    elif "run out" in commentary:
+                        wicket_type = "run out"
+                    elif "stumped" in commentary:
+                        wicket_type = "stumped"
+                
+                # Parse bowler and batsman from "c1" field (e.g., "K Clarke to K Rahul")
+                bowler = ""
+                batsman = ""
+                c1 = ball_feed.get("c1", "")
+                if c1 and " to " in c1:
+                    parts = c1.split(" to ")
+                    bowler = parts[0].strip() if len(parts) > 0 else ""
+                    batsman = parts[1].strip() if len(parts) > 1 else ""
+                
+                # Get description from "c2" field (HTML content)
+                description = ball_feed.get("c2", "")
+                description = re.sub(r'<[^>]+>', '', description)
+                description = description.replace('&nbsp;', ' ')
+                
+                # Get timestamp from id (it's a timestamp in milliseconds)
+                feed_id = ball_feed.get("id", 0)
+                timestamp = datetime.fromtimestamp(feed_id / 1000).isoformat() if feed_id else datetime.now().isoformat()
+                
+                # Generate delivery ID from match_id and feed_id
+                delivery_id = f"{match_id}_{feed_id}"
+                
+                deliveries.append({
+                    "id": delivery_id,
+                    "matchId": match_id,
+                    "over": over,
+                    "ball": ball,
+                    "bowler": bowler,
+                    "batsman": batsman,
+                    "runs": runs,
+                    "isWicket": is_wicket,
+                    "wicketType": wicket_type,
+                    "isFour": is_four,
+                    "isSix": is_six,
+                    "description": description,
+                    "timestamp": timestamp,
+                    "commentCount": 0
+                })
+            
+            # Sort by over and ball (most recent first for reverse chronological order)
+            deliveries.sort(key=lambda x: (x["over"], x["ball"]), reverse=True)
+            
+            print(f"Fetched {len(deliveries)} deliveries from CricAPI Commentary for match {match_id} (lastDocId: {last_doc_id_numeric})")
+            return deliveries
+            
     except Exception as e:
+        print(f"Error calling CricAPI Commentary API: {e}")
         raise HTTPException(status_code=500, detail=f"Error fetching match deliveries: {str(e)}")
 
 @app.get("/deliveries/{delivery_id}", response_model=Delivery)
