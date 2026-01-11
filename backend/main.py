@@ -308,8 +308,19 @@ async def get_deliveries_feed(limit: int = 20):
 
 @app.get("/deliveries/match/{match_id}", response_model=List[Delivery])
 async def get_match_deliveries(match_id: str):
-    """Get all deliveries for a specific match"""
+    """Get all deliveries for a specific match. Calls CricAPI Commentary API first, then falls back to Supabase."""
     try:
+        # Try CricAPI Commentary API first
+        if cricapi_commentary:
+            try:
+                api_deliveries = await cricapi_commentary.get_match_deliveries(match_id)
+                if api_deliveries:
+                    print(f"Fetched {len(api_deliveries)} deliveries from CricAPI Commentary for match {match_id}")
+                    return api_deliveries
+            except Exception as api_error:
+                print(f"Error calling CricAPI Commentary for match {match_id}: {api_error}. Falling back to Supabase.")
+        
+        # Fallback to Supabase
         result = supabase.table("deliveries").select("*").eq("match_id", match_id).order("over", desc=False).order("ball", desc=False).execute()
         # Convert snake_case to camelCase
         deliveries = []
