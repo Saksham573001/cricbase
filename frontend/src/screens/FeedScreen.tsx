@@ -42,31 +42,13 @@ export const FeedScreen: React.FC = () => {
       const response = await api.get('/deliveries/feed');
       const deliveriesData = response.data;
       setDeliveries(deliveriesData);
-      
-      // Fetch match info for unique matches
-      const uniqueMatchIds = [...new Set(deliveriesData.map((d: Delivery) => d.matchId))];
-      const matchInfoMap: Record<string, { team1: string; team2: string }> = {};
-      
-      await Promise.all(
-        uniqueMatchIds.map(async (matchId: string) => {
-          try {
-            const matchResponse = await api.get(`/matches/${matchId}`);
-            matchInfoMap[matchId] = {
-              team1: matchResponse.data.team1,
-              team2: matchResponse.data.team2,
-            };
-          } catch (error) {
-            console.error(`Error fetching match ${matchId}:`, error);
-          }
-        })
-      );
-      
-      setMatchMap(matchInfoMap);
+      // No need to fetch match details for deliveries - only fetch when user clicks on a specific match
+      setMatchMap({});
     } catch (error) {
       console.error('Error fetching deliveries:', error);
       // Mock data for development
       setDeliveries(mockDeliveries);
-      setMatchMap({ '1': { team1: 'India', team2: 'Australia' } });
+      setMatchMap({});
     } finally {
       setLoading(false);
     }

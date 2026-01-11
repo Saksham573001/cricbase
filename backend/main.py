@@ -199,8 +199,12 @@ async def get_matches(status: Optional[str] = None, offset: int = 0):
 async def get_match(match_id: str):
     """Get a specific match by ID. Calls Cricket Data API internally."""
     try:
-        # Try Cricket Data API first
-        if cricket_api:
+        # Try Cricket Data API first (only if match_id looks like a UUID)
+        # Cricket Data API uses UUIDs, Supabase might use different IDs
+        import re
+        uuid_pattern = re.compile(r'^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$', re.IGNORECASE)
+        
+        if cricket_api and uuid_pattern.match(match_id):
             try:
                 match_data = await cricket_api.get_match_info(match_id)
                 if match_data:
@@ -209,6 +213,8 @@ async def get_match(match_id: str):
                     return transformed
             except Exception as api_error:
                 print(f"Error calling Cricket Data API for match {match_id}: {api_error}. Falling back to Supabase.")
+        elif cricket_api:
+            print(f"Match ID {match_id} is not a UUID, skipping Cricket Data API and checking Supabase.")
         
         # Fallback to Supabase
         result = supabase.table("matches").select("*").eq("id", match_id).execute()
